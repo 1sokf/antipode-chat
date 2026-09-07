@@ -12,7 +12,6 @@
         
         #bg-globe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
 
-        /* En-tête avec un titre harmonieux et élégant */
         .app-header {
             position: relative;
             z-index: 2;
@@ -84,6 +83,14 @@
         .chat-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; margin-bottom: 15px; }
         .chat-header h3 { font-size: 1.05rem; color: #f8fafc; font-weight: 600; }
         
+        /* Style pour l'info de pays approximatif dans l'en-tête du chat */
+        .partner-subinfo {
+            font-size: 0.72rem;
+            color: #64748b;
+            font-weight: 400;
+            margin-top: 2px;
+        }
+        
         .close-btn { background: rgba(239, 68, 68, 0.2); color: #f87171; border: none; width: 32px; height: 32px; border-radius: 50%; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: none; padding: 0; }
         .close-btn:hover { background: rgba(239, 68, 68, 0.4); transform: scale(1.05); }
 
@@ -103,7 +110,6 @@
         .chat-input-area input { margin-bottom: 0; }
         .chat-input-area button { width: 110px; margin-top: 0; }
 
-        /* Pied de page discret */
         .footer-credit {
             position: relative;
             z-index: 2;
@@ -127,7 +133,6 @@
 
     <canvas id="bg-globe"></canvas>
 
-    <!-- En-tête élégant -->
     <header class="app-header">
         <h1 class="main-title">Antipode Chat</h1>
         <p class="app-subtitle-top" id="txt-subtitle">Connectez-vous anonymement avec votre opposé terrestre</p>
@@ -154,7 +159,10 @@
         <div id="chat-screen" class="hidden">
             <div class="card">
                 <div class="chat-header">
-                    <h3 id="partner-info">Discussion...</h3>
+                    <div>
+                        <h3 id="partner-info">Discussion...</h3>
+                        <div class="partner-subinfo" id="approx-text">Pays approximatif (basé sur l'IP)</div>
+                    </div>
                     <button class="close-btn" onclick="leaveChat()" title="Quitter">✕</button>
                 </div>
                 <div id="messages"></div>
@@ -166,7 +174,6 @@
         </div>
     </div>
 
-    <!-- Pied de page -->
     <footer class="footer-credit">
         Made by <a href="https://linktr.ee/1sokf" target="_blank">1sokf</a>
     </footer>
@@ -191,7 +198,8 @@
                 msgPlaceholder: "Écrivez un message...",
                 disconnected: "L'autre personne s'est déconnectée.",
                 alertName: "Veuillez entrer un pseudonyme valide.",
-                alertGeo: "L'accès à la géolocalisation est obligatoire pour trouver votre opposé."
+                alertGeo: "L'accès à la géolocalisation est obligatoire pour trouver votre opposé.",
+                approxCountry: "* Pays approximatif (détecté par IP)"
             },
             en: {
                 subtitle: "Connect anonymously with your Earth's opposite",
@@ -206,7 +214,8 @@
                 msgPlaceholder: "Type a message...",
                 disconnected: "The other person has disconnected.",
                 alertName: "Please enter a valid username.",
-                alertGeo: "Geolocation access is required to find your opposite."
+                alertGeo: "Geolocation access is required to find your opposite.",
+                approxCountry: "* Approximate country (detected by IP)"
             }
         };
 
@@ -221,6 +230,7 @@
         document.getElementById('status-text').innerText = t.statusLoc;
         document.getElementById('txt-btn-send').innerText = t.btnSend;
         document.getElementById('message-input').placeholder = t.msgPlaceholder;
+        document.getElementById('approx-text').innerText = t.approxCountry;
 
 
         // --- SPHÈRE 3D THREE.JS ---
