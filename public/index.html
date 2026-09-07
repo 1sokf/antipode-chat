@@ -164,7 +164,6 @@
 
         const t = isFr ? texts.fr : texts.en;
 
-        // Appliquer les textes traduits
         document.getElementById('txt-title').innerText = t.title;
         document.getElementById('txt-subtitle').innerText = t.subtitle;
         document.getElementById('txt-whatis').innerText = t.whatis;
@@ -265,8 +264,9 @@
             document.getElementById('waiting-screen').classList.add('hidden');
             document.getElementById('chat-screen').classList.remove('hidden');
 
-            const partner = data.users.find(u => u.username !== myUsername) || data.users[0];
-            const flag = countryToEmoji(partner.country);
+            // CORRECTION ICI : On utilise socket.id (unique) au lieu du pseudo pour identifier l'autre utilisateur
+            const partner = data.users.find(u => u.id !== socket.id) || data.users[0];
+            const flag = countryTypeEmojiFix = countryToEmoji(partner.country);
             const chatWithLabel = isFr ? "Discussion avec" : "Chat with";
             document.getElementById('partner-info').innerHTML = `${chatWithLabel} <b>${partner.username}</b> ${flag}`;
         });
