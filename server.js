@@ -8,9 +8,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Permet à Render de transmettre correctement la vraie IP de l'utilisateur
 app.set('trust proxy', true);
-
 app.use(express.static(path.join(__dirname, 'public')));
 
 let waitingUsers = [];
@@ -34,22 +32,16 @@ function deg2rad(deg) {
 io.on('connection', (socket) => {
     console.log('Un utilisateur s est connecté :', socket.id);
 
-    // Récupération rigoureuse de l'IP réelle (compatible Render / proxies)
     let clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
     if (clientIp && clientIp.includes(',')) {
         clientIp = clientIp.split(',')[0].trim();
     }
-    
-    // Nettoyage de l'IP locale IPv6 (ex: ::ffff:127.0.0.1 -> 127.0.0.1)
     if (clientIp && clientIp.substr(0, 7) == "::ffff:") {
         clientIp = clientIp.substr(7);
     }
 
     const geo = geoip.lookup(clientIp);
-    // Si l'IP est locale ou non trouvée, on met 'CA' par défaut
     const country = (geo && geo.country) ? geo.country : 'CA';
-
-    console.log(`IP détectée: ${clientIp} -> Pays: ${country}`);
 
     socket.on('join', (username) => {
         socket.data.username = username;
@@ -62,8 +54,6 @@ io.on('connection', (socket) => {
 
         socket.data.lat = coords.lat;
         socket.data.lon = coords.lon;
-        socket.data.antiLat = antiLat;
-        socket.data.antiLon = antiLon;
 
         let bestMatch = null;
         let minDistance = Infinity;
@@ -117,8 +107,22 @@ io.on('connection', (socket) => {
         });
     });
 
+    socket.on('leave_chat', () => {
+        socket.rooms.forEach((room) => {
+            if (room.startsWith('room_')) {
+                io.to(room).emit('partner_disconnected');
+                socket.leave(room);
+            }
+        });
+    });
+
     socket.on('disconnect', () => {
         waitingUsers = waitingUsers.filter(u => u.id !== socket.id);
+        socket.rooms.forEach((room) => {
+            if (room.startsWith('room_')) {
+                io.to(room).emit('partner_disconnected');
+            }
+        });
         console.log('Utilisateur déconnecté :', socket.id);
     });
 });
