@@ -3,45 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Antipode Chat</title>
+    <title>Antipode - Connectez-vous à l'opposé de la Terre</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: #1e293b; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 100%; max-width: 400px; text-align: center; }
-        input, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 6px; border: none; font-size: 1rem; box-sizing: border-box; }
-        input { background: #334155; color: white; outline: none; }
-        button { background: #3b82f6; color: white; cursor: pointer; font-weight: bold; }
-        button:hover { background: #2563eb; }
-        #chat-box { display: flex; flex-direction: column; height: 300px; text-align: left; margin-top: 10px;}
-        #messages { flex-grow: 1; overflow-y: auto; background: #0f172a; padding: 10px; border-radius: 6px; margin-bottom: 10px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background: #090d16; color: #f1f5f9; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; }
+        
+        #bg-globe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+
+        .container { position: relative; z-index: 2; width: 100%; max-width: 440px; padding: 20px; }
+        
+        .card { 
+            background: rgba(15, 23, 42, 0.85); 
+            backdrop-filter: blur(16px); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            padding: 2.5rem 2rem; 
+            border-radius: 20px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6); 
+            text-align: center; 
+        }
+
+        h2 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        p { color: #94a3b8; font-size: 0.95rem; margin-bottom: 1.5rem; line-height: 1.5; }
+
+        input { 
+            width: 100%; padding: 14px 16px; background: rgba(30, 41, 59, 0.7); 
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; 
+            color: white; font-size: 1rem; outline: none; transition: all 0.2s; margin-bottom: 1rem; 
+        }
+        input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+
+        button { 
+            width: 100%; padding: 14px; background: linear-gradient(135deg, #3b82f6, #2563eb); 
+            color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; 
+            cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        button:hover { transform: translateY(-1px); filter: brightness(1.1); box-shadow: 0 6px 16px rgba(59, 130, 246, 0.6); }
+        
         .hidden { display: none !important; }
-        .status { margin-top: 15px; color: #94a3b8; font-style: italic; }
+        .status { color: #cbd5e1; font-weight: 500; margin-top: 10px; animation: pulse 2s infinite; }
+
+        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+
+        #chat-screen .card { padding: 1.5rem; text-align: left; max-width: 480px; }
+        .chat-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; margin-bottom: 15px; }
+        .chat-header h3 { font-size: 1.1rem; color: #f8fafc; font-weight: 600; }
+        
+        #messages { 
+            height: 320px; overflow-y: auto; background: rgba(2, 6, 23, 0.6); 
+            border: 1px solid rgba(255,255,255,0.04); padding: 15px; border-radius: 12px; 
+            margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px; 
+        }
+        
+        .message-bubble { max-width: 75%; padding: 10px 14px; border-radius: 12px; font-size: 0.92rem; line-height: 1.4; }
+        .message-bubble.me { background: #3b82f6; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .message-bubble.other { background: #1e293b; color: #e2e8f0; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid rgba(255,255,255,0.05); }
+        .message-sender { font-size: 0.75rem; color: #94a3b8; margin-bottom: 3px; display: block; font-weight: 500; }
+        
+        .chat-input-area { display: flex; gap: 8px; }
+        .chat-input-area input { margin-bottom: 0; }
+        .chat-input-area button { width: 110px; margin-top: 0; }
     </style>
 </head>
 <body>
 
-    <div class="card" id="login-screen">
-        <h2>🌍 Antipode Chat</h2>
-        <p>Parle avec la personne la plus proche de l'autre bout de la Terre !</p>
-        <input type="text" id="username" placeholder="Entre ton petit nom..." maxlength="15">
-        <button onclick="startApp()">Trouver mon antipode</button>
-    </div>
+    <canvas id="bg-globe"></canvas>
 
-    <div class="card hidden" id="waiting-screen">
-        <h2>Recherche en cours...</h2>
-        <p class="status" id="status-text">Demande de géolocalisation...</p>
-    </div>
-
-    <div class="card hidden" id="chat-screen">
-        <h3 id="partner-info" style="margin-top:0;">Chat avec ...</h3>
-        <div id="chat-box">
-            <div id="messages"></div>
+    <div class="container">
+        <div class="card" id="login-screen">
+            <h2>Antipode</h2>
+            <p>Connectez-vous anonymement avec la personne située exactement de l'autre côté de la planète.</p>
+            <input type="text" id="username" placeholder="Votre pseudonyme..." maxlength="15" autocomplete="off">
+            <button onclick="startApp()">Lancer la recherche</button>
         </div>
-        <input type="text" id="message-input" placeholder="Écris ton message..." onkeypress="checkEnter(event)">
-        <button onclick="sendMessage()">Envoyer</button>
+
+        <div class="card hidden" id="waiting-screen">
+            <h2>Recherche en cours</h2>
+            <p class="status" id="status-text">Demande des coordonnées géographiques...</p>
+        </div>
+
+        <div id="chat-screen" class="hidden">
+            <div class="card">
+                <div class="chat-header">
+                    <h3 id="partner-info">Connexion établie...</h3>
+                    <span style="font-size: 0.8rem; background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 4px 10px; border-radius: 20px; font-weight: 600;">En ligne</span>
+                </div>
+                <div id="messages"></div>
+                <div class="chat-input-area">
+                    <input type="text" id="message-input" placeholder="Écrivez un message..." autocomplete="off" onkeypress="checkEnter(event)">
+                    <button onclick="sendMessage()">Envoyer</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // Sphère 3D Three.js
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-globe'), alpha: true, antialias: true });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const geometry = new THREE.IcosahedronGeometry(2, 2);
+        const material = new THREE.MeshBasicMaterial({ color: 0x3b82f6, wireframe: true, transparent: true, opacity: 0.15 });
+        const globe = new THREE.Mesh(geometry, material);
+        scene.add(globe);
+
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 300;
+        const posArray = new Float32Array(particlesCount * 3);
+        for(let i = 0; i < particlesCount * 3; i++) { posArray[i] = (Math.random() - 0.5) * 15; }
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const particlesMaterial = new THREE.PointsMaterial({ size: 0.02, color: 0x60a5fa });
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
+
+        camera.position.z = 5;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            globe.rotation.y += 0.002;
+            globe.rotation.x += 0.001;
+            particlesMesh.rotation.y -= 0.0005;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Application Socket.io
         const socket = io();
         let myUsername = '';
 
@@ -54,7 +152,7 @@
 
         function startApp() {
             const input = document.getElementById('username').value.trim();
-            if (!input) return alert("Mets un nom stp !");
+            if (!input) return alert("Veuillez entrer un pseudonyme valide.");
             myUsername = input;
 
             document.getElementById('login-screen').classList.add('hidden');
@@ -65,24 +163,24 @@
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        document.getElementById('status-text').innerText = "Recherche de ton alter ego terrestre...";
+                        document.getElementById('status-text').innerText = "Calcul de l'antipode et balayage de la planète...";
                         socket.emit('send_location', {
                             lat: position.coords.latitude,
                             lon: position.coords.longitude
                         });
                     },
                     (error) => {
-                        alert("Erreur de géolocalisation : tu dois l'autoriser pour utiliser l'app !");
+                        alert("L'accès à la géolocalisation est obligatoire pour trouver votre opposé.");
                         location.reload();
                     }
                 );
             } else {
-                alert("La géolocalisation n'est pas supportée par ton navigateur.");
+                alert("Votre navigateur ne supporte pas la géolocalisation.");
             }
         }
 
         socket.io.on('waiting', () => {
-            document.getElementById('status-text').innerText = "En attente d'une autre personne connectée sur Terre...";
+            document.getElementById('status-text').innerText = "En attente d'une connexion correspondante...";
         });
 
         socket.on('match_found', (data) => {
@@ -91,7 +189,7 @@
 
             const partner = data.users.find(u => u.username !== myUsername) || data.users[0];
             const flag = countryToEmoji(partner.country);
-            document.getElementById('partner-info').innerText = `Chat avec ${partner.username} ${flag}`;
+            document.getElementById('partner-info').innerHTML = `Discussion avec <b>${partner.username}</b> ${flag}`;
         });
 
         function sendMessage() {
@@ -116,11 +214,17 @@
 
         function appendMessage(sender, text, isMe) {
             const messages = document.getElementById('messages');
-            const div = document.createElement('div');
-            div.style.margin = "5px 0";
-            div.style.textAlign = isMe ? "right" : "left";
-            div.innerHTML = `<span style="font-size:0.75rem; color:#94a3b8;">${sender}</span><br><b style="font-size:0.95rem;">${text}</b>`;
-            messages.appendChild(div);
+            const bubble = document.createElement('div');
+            bubble.className = `message-bubble ${isMe ? 'me' : 'other'}`;
+            
+            let content = '';
+            if (!isMe) {
+                content += `<span class="message-sender">${sender}</span>`;
+            }
+            content += `<span>${text}</span>`;
+            bubble.innerHTML = content;
+            
+            messages.appendChild(bubble);
             messages.scrollTop = messages.scrollHeight;
         }
     </script>
