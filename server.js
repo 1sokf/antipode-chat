@@ -1,14 +1,12 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const geoip = require('geoip-lite');
 const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.set('trust proxy', true);
 app.use(express.static(path.join(__dirname, 'public')));
 
 let waitingUsers = [];
@@ -32,28 +30,32 @@ function deg2rad(deg) {
 io.on('connection', (socket) => {
     console.log('Un utilisateur s est connecté :', socket.id);
 
-    let clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
-    if (clientIp && clientIp.includes(',')) {
-        clientIp = clientIp.split(',')[0].trim();
-    }
-    if (clientIp && clientIp.substr(0, 7) == "::ffff:") {
-        clientIp = clientIp.substr(7);
-    }
-
-    const geo = geoip.lookup(clientIp);
-    const country = (geo && geo.country) ? geo.country : 'CA';
-
     socket.on('join', (username) => {
         socket.data.username = username;
-        socket.data.country = country;
     });
 
-    socket.on('send_location', (coords) => {
-        let antiLat = -coords.lat;
-        let antiLon = coords.lon > 0 ? coords.lon - 180 : coords.lon + 180;
-
+    // Réception du GPS et conversion précise en pays via OpenStreetMap
+    socket.on('send_location', async (coords) => {
         socket.data.lat = coords.lat;
         socket.data.lon = coords.lon;
+
+        // Récupération du vrai pays via le GPS du client (Nominatim)
+        let country = 'unknown';
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.lat}&lon=${coords.lon}&zoom=3`, {
+                headers: { 'User-Agent': 'AntipodeChatApp' }
+            });
+            const result = await response.json();
+            if (result && result.address && result.address.country_code) {
+                country = result.address.country_code.toLowerCase();
+            }
+        } catch (error) {
+            console.error("Erreur géocodage GPS:", error.message);
+        }
+        socket.data.country = country;
+
+        let antiLat = -coords.lat;
+        let antiLon = coords.lon > 0 ? coords.lon - 180 : coords.lon + 180;
 
         let bestMatch = null;
         let minDistance = Infinity;
@@ -100,7 +102,7 @@ io.on('connection', (socket) => {
         socket.rooms.forEach((room) => {
             if (room.startsWith('room_')) {
                 io.to(room).emit('chat_message', {
-                    id: socket.id, // ID unique inclus pour identifier l'expéditeur indépendamment du pseudo
+                    id: socket.id,
                     username: socket.data.username,
                     text: data.text
                 });
