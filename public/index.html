@@ -264,9 +264,8 @@
             document.getElementById('waiting-screen').classList.add('hidden');
             document.getElementById('chat-screen').classList.remove('hidden');
 
-            // CORRECTION ICI : On utilise socket.id (unique) au lieu du pseudo pour identifier l'autre utilisateur
             const partner = data.users.find(u => u.id !== socket.id) || data.users[0];
-            const flag = countryTypeEmojiFix = countryToEmoji(partner.country);
+            const flag = countryToEmoji(partner.country);
             const chatWithLabel = isFr ? "Discussion avec" : "Chat with";
             document.getElementById('partner-info').innerHTML = `${chatWithLabel} <b>${partner.username}</b> ${flag}`;
         });
@@ -286,7 +285,8 @@
         }
 
         socket.on('chat_message', (data) => {
-            if (data.username !== myUsername) {
+            // Correction : On compare l'ID unique de l'émetteur pour autoriser l'affichage même avec des pseudos identiques
+            if (data.id !== socket.id) {
                 appendMessage(data.username, data.text, false);
             }
         });

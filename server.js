@@ -100,6 +100,7 @@ io.on('connection', (socket) => {
         socket.rooms.forEach((room) => {
             if (room.startsWith('room_')) {
                 io.to(room).emit('chat_message', {
+                    id: socket.id, // ID unique inclus pour identifier l'expéditeur indépendamment du pseudo
                     username: socket.data.username,
                     text: data.text
                 });
