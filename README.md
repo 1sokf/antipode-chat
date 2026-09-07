@@ -42,6 +42,7 @@ The server automatically handles proxy headers (trust proxy) for accurate IP det
 Created with passion to connect the whole world.
 
 -----------------------------------------------------------------------
+```text
   _           _     __
  / |___  ___ | | __/ _|
  | / __|/ _ \| |/ / |_
