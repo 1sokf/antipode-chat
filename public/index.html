@@ -4,27 +4,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Antipode - Chat</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-        body { background: #090d16; color: #f1f5f9; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; }
+        body { background: #090d16; color: #f1f5f9; height: 100vh; display: flex; flex-direction: column; justify-content: space-between; align-items: center; overflow: hidden; position: relative; padding: 25px 20px; }
         
         #bg-globe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
 
-        .container { position: relative; z-index: 2; width: 100%; max-width: 440px; padding: 20px; }
+        /* En-tête avec un titre harmonieux et élégant */
+        .app-header {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .main-title {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+        }
+
+        .app-subtitle-top {
+            font-size: 0.88rem;
+            color: #94a3b8;
+            font-weight: 400;
+        }
+
+        .container { position: relative; z-index: 2; width: 100%; max-width: 440px; }
         
         .card { 
-            background: rgba(15, 23, 42, 0.88); 
+            background: rgba(15, 23, 42, 0.85); 
             backdrop-filter: blur(16px); 
             border: 1px solid rgba(255, 255, 255, 0.08); 
-            padding: 2.2rem 2rem; 
+            padding: 2rem 1.8rem; 
             border-radius: 20px; 
             box-shadow: 0 20px 40px rgba(0,0,0,0.6); 
             text-align: center; 
         }
 
-        h2 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         p { color: #94a3b8; font-size: 0.92rem; margin-bottom: 1.2rem; line-height: 1.5; }
 
         .info-box {
@@ -79,18 +102,40 @@
         .chat-input-area { display: flex; gap: 8px; }
         .chat-input-area input { margin-bottom: 0; }
         .chat-input-area button { width: 110px; margin-top: 0; }
+
+        /* Pied de page discret */
+        .footer-credit {
+            position: relative;
+            z-index: 2;
+            font-size: 0.82rem;
+            color: #64748b;
+            text-align: center;
+        }
+        .footer-credit a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .footer-credit a:hover {
+            color: #60a5fa;
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
 
     <canvas id="bg-globe"></canvas>
 
+    <!-- En-tête élégant -->
+    <header class="app-header">
+        <h1 class="main-title">Antipode Chat</h1>
+        <p class="app-subtitle-top" id="txt-subtitle">Connectez-vous anonymement avec votre opposé terrestre</p>
+    </header>
+
     <div class="container">
         <!-- Écran de Connexion -->
         <div class="card" id="login-screen">
-            <h2 id="txt-title">Antipode</h2>
-            <p id="txt-subtitle">Connectez-vous anonymement avec la personne située à l'opposé de la Terre.</p>
-            
             <div class="info-box">
                 🌍 <strong id="txt-whatis">Qu'est-ce qu'un antipode ?</strong> <span id="txt-explanation">C'est le point diamétralement opposé sur la surface de la Terre. Si vous traversiez la planète en ligne droite, vous en sortiriez !</span>
             </div>
@@ -101,7 +146,7 @@
 
         <!-- Écran d'Attente -->
         <div class="card hidden" id="waiting-screen">
-            <h2 id="txt-searching">Recherche en cours</h2>
+            <h2 id="txt-searching" style="color: #f8fafc; font-size: 1.25rem; margin-bottom: 8px;">Recherche en cours</h2>
             <p class="status" id="status-text">Demande des coordonnées géographiques...</p>
         </div>
 
@@ -121,6 +166,11 @@
         </div>
     </div>
 
+    <!-- Pied de page -->
+    <footer class="footer-credit">
+        Made by <a href="https://linktr.ee/1sokf" target="_blank">1sokf</a>
+    </footer>
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
         // --- MULTILINGUE AUTOMATIQUE (FR / EN) ---
@@ -129,8 +179,7 @@
 
         const texts = {
             fr: {
-                title: "Antipode",
-                subtitle: "Connectez-vous anonymement avec la personne située à l'opposé de la Terre.",
+                subtitle: "Connectez-vous anonymement avec votre opposé terrestre",
                 whatis: "Qu'est-ce qu'un antipode ?",
                 explanation: "C'est le point diamétralement opposé sur la surface de la Terre. Si vous traversiez la planète en ligne droite, vous en sortiriez !",
                 placeholderName: "Votre pseudonyme...",
@@ -145,8 +194,7 @@
                 alertGeo: "L'accès à la géolocalisation est obligatoire pour trouver votre opposé."
             },
             en: {
-                title: "Antipode",
-                subtitle: "Connect anonymously with someone located on the opposite side of the Earth.",
+                subtitle: "Connect anonymously with your Earth's opposite",
                 whatis: "What is an antipode?",
                 explanation: "It is the point on the Earth's surface diametrically opposite to your location. If you dug straight through the planet, you'd pop out there!",
                 placeholderName: "Your username...",
@@ -164,7 +212,6 @@
 
         const t = isFr ? texts.fr : texts.en;
 
-        document.getElementById('txt-title').innerText = t.title;
         document.getElementById('txt-subtitle').innerText = t.subtitle;
         document.getElementById('txt-whatis').innerText = t.whatis;
         document.getElementById('txt-explanation').innerText = t.explanation;
@@ -285,7 +332,6 @@
         }
 
         socket.on('chat_message', (data) => {
-            // Correction : On compare l'ID unique de l'émetteur pour autoriser l'affichage même avec des pseudos identiques
             if (data.id !== socket.id) {
                 appendMessage(data.username, data.text, false);
             }
