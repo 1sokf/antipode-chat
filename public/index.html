@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antipode Chat</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #1e293b; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 100%; max-width: 400px; text-align: center; }
+        input, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 6px; border: none; font-size: 1rem; box-sizing: border-box; }
+        input { background: #334155; color: white; outline: none; }
+        button { background: #3b82f6; color: white; cursor: pointer; font-weight: bold; }
+        button:hover { background: #2563eb; }
+        #chat-box { display: flex; flex-direction: column; height: 300px; text-align: left; margin-top: 10px;}
+        #messages { flex-grow: 1; overflow-y: auto; background: #0f172a; padding: 10px; border-radius: 6px; margin-bottom: 10px; }
+        .hidden { display: none !important; }
+        .status { margin-top: 15px; color: #94a3b8; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <div class="card" id="login-screen">
+        <h2>🌍 Antipode Chat</h2>
+        <p>Parle avec la personne la plus proche de l'autre bout de la Terre !</p>
+        <input type="text" id="username" placeholder="Entre ton petit nom..." maxlength="15">
+        <button onclick="startApp()">Trouver mon antipode</button>
+    </div>
+
+    <div class="card hidden" id="waiting-screen">
+        <h2>Recherche en cours...</h2>
+        <p class="status" id="status-text">Demande de géolocalisation...</p>
+    </div>
+
+    <div class="card hidden" id="chat-screen">
+        <h3 id="partner-info" style="margin-top:0;">Chat avec ...</h3>
+        <div id="chat-box">
+            <div id="messages"></div>
+        </div>
+        <input type="text" id="message-input" placeholder="Écris ton message..." onkeypress="checkEnter(event)">
+        <button onclick="sendMessage()">Envoyer</button>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let myUsername = '';
+
+        function countryToEmoji(countryCode) {
+            if (!countryCode) return '🌍';
+            return countryCode.toUpperCase().replace(/./g, char => 
+                String.fromCodePoint(127397 + char.charCodeAt(0))
+            );
+        }
+
+        function startApp() {
+            const input = document.getElementById('username').value.trim();
+            if (!input) return alert("Mets un nom stp !");
+            myUsername = input;
+
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('waiting-screen').classList.remove('hidden');
+
+            socket.emit('join', myUsername);
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        document.getElementById('status-text').innerText = "Recherche de ton alter ego terrestre...";
+                        socket.emit('send_location', {
+                            lat: position.coords.latitude,
+                            lon: position.coords.longitude
+                        });
+                    },
+                    (error) => {
+                        alert("Erreur de géolocalisation : tu dois l'autoriser pour utiliser l'app !");
+                        location.reload();
+                    }
+                );
+            } else {
+                alert("La géolocalisation n'est pas supportée par ton navigateur.");
+            }
+        }
+
+        socket.io.on('waiting', () => {
+            document.getElementById('status-text').innerText = "En attente d'une autre personne connectée sur Terre...";
+        });
+
+        socket.on('match_found', (data) => {
+            document.getElementById('waiting-screen').classList.add('hidden');
+            document.getElementById('chat-screen').classList.remove('hidden');
+
+            const partner = data.users.find(u => u.username !== myUsername) || data.users[0];
+            const flag = countryToEmoji(partner.country);
+            document.getElementById('partner-info').innerText = `Chat avec ${partner.username} ${flag}`;
+        });
+
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            socket.emit('chat_message', { text });
+            appendMessage(myUsername, text, true);
+            input.value = '';
+        }
+
+        function checkEnter(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
+
+        socket.on('chat_message', (data) => {
+            if (data.username !== myUsername) {
+                appendMessage(data.username, data.text, false);
+            }
+        });
+
+        function appendMessage(sender, text, isMe) {
+            const messages = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.style.margin = "5px 0";
+            div.style.textAlign = isMe ? "right" : "left";
+            div.innerHTML = `<span style="font-size:0.75rem; color:#94a3b8;">${sender}</span><br><b style="font-size:0.95rem;">${text}</b>`;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
+    </script>
+</body>
+</html>
